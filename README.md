@@ -27,6 +27,7 @@ This repository has the following directories:
  4. [Amazon Cognito](https://docs.aws.amazon.com/cognito/latest/developerguide/what-is-amazon-cognito.html)
  5. [AWS Cloud9](https://docs.aws.amazon.com/cloud9/latest/user-guide/welcome.html)
  6. [AWS Key Management Service](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html)
+ 7. [AWS VPC Endpoints](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html)
  
  
  ## Pre-requisites 
@@ -131,15 +132,7 @@ Here, in Step 4, the CloudFormation stack created customer managed KMS key and g
 cd /home/ec2-user/environment/lambda-layer-tokenization/src/tokenizer/
 ```
 
-**Step 5.2** Open the file `ddb_encrypt_item.py` and update the value of the variable `aws_cmk_id` with the output value of `KMSKeyID` generated in Step 4.5 above and save the file.
-
-![file-tree](images/edit-file-tree.png)
-
-![open-file](images/opened-file.png)
-
-As part of Lambda Layer creation, we need dependent libraries for the application code `ddb_encrypt_item.py` to run. Since the libraries are Operating System (OS) dependent, they have to be compiled on native OS supported by Lambda.
-
-**Step 5.3** Check the dependent libraries mentioned in `requirements.txt` file
+**Step 5.2** Check the dependent libraries mentioned in `requirements.txt` file
 
 ```bash
 cat requirements.txt 
@@ -151,7 +144,7 @@ dynamodb-encryption-sdk
 cryptography
 ```
 
-**Step 5.4** Run the script to compile and install the dependent libraries in *dynamodb-client/python/* directory. For Lambda Function, we can include `--use container` in `sam build` command to achieve this but for Lambda Layer, we need to download the Lambda docker image to compile dependent libraries for Amazon Linux Image. [More details on this](https://github.com/pyca/cryptography/issues/3051?source=post_page-----f3e228470659----------------------)
+**Step 5.3** Run the script to compile and install the dependent libraries in *dynamodb-client/python/* directory. For Lambda Function, we can include `--use container` in `sam build` command to achieve this but for Lambda Layer, we need to download the Lambda docker image to compile dependent libraries for Amazon Linux Image. [More details on this](https://github.com/pyca/cryptography/issues/3051?source=post_page-----f3e228470659----------------------)
 
 ```bash
 ./get_layer_packages.sh
@@ -160,21 +153,7 @@ cryptography
 The output will look like 
 ![layer-installed](images/get-lambda-layer-output.png)
 
-**Step 5.5** Copy the python files `ddb_encrypt_item.py` and `hash_gen.py` to *dynamodb-client/python/*. This is required since Lambda Layer expects files to be in a specific directory to be used by Lambda function. [More details on this](https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html#configuration-layers-path)
-
-`ddb_encrypt_item.py` – This file contains the logic to encrypt and decrypt the plain text and store encrypted information in DynamoDB table.
-
-`hash_gen.py` - This file contains the logic to create UUID tokens for strings which will be provided to the end application in exchange for sensitive data, for example, credit card. 
-
-```bash
-cp ddb_encrypt_item.py dynamodb-client/python/
-```
-
-```bash
-cp hash_gen.py dynamodb-client/python/
-```
-
-**Step 5.6** Build the SAM template (template.yaml)
+**Step 5.4** Build the SAM template (template.yaml)
 
 ```bash
 sam build --use-container 
@@ -184,7 +163,7 @@ After the build is successful, the output will look like
 
 ![build-success](images/build-success.png)
 
-**Step 5.7** Package the code and push to S3 Bucket. Replace `unique-s3-bucket-name` with the value identified in Step 2
+**Step 5.5** Package the code and push to S3 Bucket. Replace `unique-s3-bucket-name` with the value identified in Step 2
 
 ```bash
 sam package --s3-bucket <unique-s3-bucket-name> --output-template-file packaged.yaml
@@ -194,7 +173,7 @@ The output will look like
 
 ![package-success](images/tokenizer-stack-package.png)
 
-**Step 5.8** Similar to Step 4.4, create CloudFormation stack using the below code to create resources and deploy your code. Wait for the stack creation to complete. Note the name of the stack is `tokenizer-stack`
+**Step 5.6** Similar to Step 4.4, create CloudFormation stack using the below code to create resources and deploy your code. Wait for the stack creation to complete. Note the name of the stack is `tokenizer-stack`
 
 ```bash
 sam deploy --template-file ./packaged.yaml --stack-name tokenizer-stack
@@ -203,7 +182,7 @@ sam deploy --template-file ./packaged.yaml --stack-name tokenizer-stack
 The output will look like 
 ![tokenizer-stack](images/tokenizer-stack.png)
 
-**Step 5.9** Get the output variables of the stack
+**Step 5.7** Get the output variables of the stack
 
 ```bash
 aws cloudformation describe-stacks --stack-name tokenizer-stack
@@ -281,38 +260,79 @@ The output will look like
 
 ```json
 "Outputs": [
-                {
-                    "Description": "Customer Order Lambda Function ARN", 
-                    "OutputKey": "CustomerOrderFunction", 
-                    "OutputValue": "*******************:app-stack-CustomerOrderFunction*******"
-                }, 
-                {
-                    "Description": "API Gateway endpoint URL for CustomerOrderFunction", 
-                    "OutputKey": "PaymentMethodApiURL", 
-                    "OutputValue": "https://*****************/dev/"
-                }, 
-                {
-                    "Description": "AWS Account Id", 
-                    "OutputKey": "AccountId", 
-                    "OutputValue": "********"
-                },
-                {
-                    "Description": "User Pool App Client for wer application", 
-                    "OutputKey": "UserPoolAppClientId", 
-                    "OutputValue": "********************"
-                }, 
-                {
-                    "Description": "Region", 
-                    "OutputKey": "Region", 
-                    "OutputValue": "*************"
-                }
-
-            ]
+    {
+        "Description": "Customer Order Lambda Function ARN", 
+        "OutputKey": "CustomerOrderFunction", 
+        "OutputValue": "*******************:app-stack-CustomerOrderFunction*******"
+    }, 
+    {
+        "Description": "API Gateway endpoint URL for CustomerOrderFunction", 
+        "OutputKey": "PaymentMethodApiURL", 
+        "OutputValue": "https://*****************/dev/"
+    }, 
+    {
+        "Description": "AWS Account Id", 
+        "OutputKey": "AccountId", 
+        "OutputValue": "********"
+    }, 
+    {
+        "Description": "User Pool App Client for your application", 
+        "OutputKey": "UserPoolAppClientId", 
+        "OutputValue": "********************"
+    }, 
+    {
+        "Description": "Region", 
+        "OutputKey": "Region", 
+        "OutputValue": "*************"
+    }, 
+    {
+        "Description": "User Pool Arn for the cognito pool", 
+        "OutputKey": "UserPoolArn", 
+        "OutputValue": "arn:aws:cognito-idp:**:**:userpool/********"
+    }, 
+    {
+        "Description": "Implicit IAM Role created for Hello World function", 
+        "OutputKey": "LambdaExecutionRole", 
+        "OutputValue": "******app-stack-LambdaExecutionRole-****"
+    }
+]
 ```
-Note the *OutputValue* of *OutputKey* `PaymentMethodApiURL` , `AccountId` , `UserPoolAppClientId` and `Region` from the output for later steps.
+Note the *OutputValue* of *OutputKey* `LambdaExecutionRole`, `PaymentMethodApiURL` , `AccountId` , `UserPoolAppClientId` and `Region` from the output for later steps.
+
+**Step 6.6** Update KMS permissions to limit what our lambda is able to do with KMS. This will ensure we are adhering to least privilege principles. You will need the `LambdaExecutionRole` and `AccountId` from step 6.5, the KMS ARN from step 4.5. Replace the key values below and run the following command:
+
+```bash
+KEYID="your kms ARN"
+ROOTPrincipal="arn:aws:iam::{your account number}:root"
+LambdaExecutionRole="your LambdaExecutionRole ARN"
+POLICY=$(cat << EOF
+{ 
+    "Version": "2012-10-17", 
+    "Id": "key-default-1", 
+    "Statement": [ 
+        { 
+            "Sid": "Enable IAM User Permissions", 
+            "Effect": "Allow", 
+            "Principal": {"AWS": ["$ROOTPrincipal"]}, 
+            "Action": "kms:*", 
+            "Resource": "$KEYID" 
+        }, 
+        { 
+            "Sid": "Enable IAM User Permissions", 
+            "Effect": "Allow", 
+            "Principal": {"AWS": ["$LambdaExecutionRole"]}, 
+            "Action": ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey", "kms:GenerateDataKeyWithoutPlaintext"], 
+            "Resource": "$KEYID" 
+        } 
+    ] 
+}
+EOF
+); \
+aws kms put-key-policy --key-id "$KEYID" --policy-name default --policy "$POLICY"
+```
 
 
-**Step 6.6** Create a Cognito user with the following code. Replace `Region` and `UserPoolAppClientId` with values noted in  the previous step. Also, provide a **valid** email in place of `user-email` and `password`. Note: you should have access to the email provided to get the verification code. The password should be minimum 6 characters long, should contain at least one lower case and one upper case character.  
+**Step 6.7** Create a Cognito user with the following code. Replace `Region` and `UserPoolAppClientId` with values noted in  the previous step. Also, provide a **valid** email in place of `user-email` and `password`. Note: you should have access to the email provided to get the verification code. The password should be minimum 6 characters long, should contain at least one lower case and one upper case character.  
 
 ```bash
 aws cognito-idp sign-up --region <Region> --client-id <UserPoolAppClientId> --username <user-email> --password <password>
@@ -331,7 +351,7 @@ The output will look like
 }
 ```
 
-**Step 6.7** Lets verify the Cognito user we just created  
+**Step 6.8** Lets verify the Cognito user we just created  
 
 **Note** – Replace `CONFIRMATION_CODE_IN_EMAIL` with the verification code recieved in the email provided in the previous step. 
 
@@ -341,7 +361,7 @@ aws cognito-idp confirm-sign-up --client-id <UserPoolAppClientId>  --username <u
 
 **Note** – There will be no output for this command.
 
-**Step 6.8** Generate ID token for API authentication. Replace `UserPoolAppClientId` with value noted in step 6.5. Also replace `user-email` and `password` with the same values provided in step 6.6. 
+**Step 6.9** Generate ID token for API authentication. Replace `UserPoolAppClientId` with value noted in step 6.5. Also replace `user-email` and `password` with the same values provided in step 6.6. 
 
 ```bash
 aws cognito-idp initiate-auth --auth-flow USER_PASSWORD_AUTH --client-id <UserPoolAppClientId> --auth-parameters USERNAME=<user-email>,PASSWORD=<password>
@@ -368,7 +388,7 @@ Now, we will invoke APIs to test the application. There are two APIs -
 1. **order** - The first API i.e. *order* is to create the customer order, generate the token for credit card number (using Lambda Layer) and store encrypted credit card number in another DynamoDB table called `CreditCardTokenizerTable` (as specified in the Lambda Layer) and finally store the customer information along with the credit card token in DynamoDB table called `CustomerOrderTable`. 
 2. **paybill** - The second API i.e. *paybill* takes the `CustomerOrder` number and fetches credit card token from  `CustomerOrderTable` and calls decrypt method in Lambda Layer to get the deciphered credit card number. 
 
-**Step 6.9** Let's call */order* API to create the order with the following code. Replace the value of `PaymentMethodApiURL` (Step 6.5) and `IdToken` (Step 6.8) with the values identified in the previous steps. 
+**Step 6.10** Let's call */order* API to create the order with the following code. Replace the value of `PaymentMethodApiURL` (Step 6.5) and `IdToken` (Step 6.8) with the values identified in the previous steps. 
 
 ```bash
 curl -X POST \
@@ -389,7 +409,7 @@ The output will look like
 {"message": "Order Created Successfully", "CreditCardToken": "*************"}
 ````
 
-**Step 6.10** Let's call */paybill* API to pay the bill using the previously provided information. Replace the value of `PaymentMethodApiURL` (Step 6.5) and `IdToken` (Step 6.8) with the values identified in the previous steps. 
+**Step 6.11** Let's call */paybill* API to pay the bill using the previously provided information. Replace the value of `PaymentMethodApiURL` (Step 6.5) and `IdToken` (Step 6.8) with the values identified in the previous steps. 
 
 ```bash
 curl -X POST \
@@ -409,7 +429,7 @@ The output will look like
 
 Application has created the customer order with required details and saved the plain text information (generated credit card token) in DynamoDB table called `CustomerOrdeTable` and encrypted `CreditCard` information is stored in another DynamoDB table called `CreditCardTokenizerTable`. Now, check the values in both the tables to see what items are stored. 
 
-**Step 6.11** Get the items stored in `CustomerOrdeTable`
+**Step 6.12** Get the items stored in `CustomerOrdeTable`
 
 ```bash
 aws dynamodb get-item --table-name CustomerOrderTable --key '{ "CustomerOrder" : { "S": "123456789" }  }'
@@ -438,7 +458,7 @@ The output will look like
 
 Note the value of `CreditCardToken`. It will be the generated token value and not actual `CreditCard` provided by the end user.
 
-**Step 6.12** Get the items stored in `CreditCardTokenizerTable`. Replace the value of `CreditCardToken` (Step 6.11) and `AccountId` (Step 6.5) with previously identified values.
+**Step 6.13** Get the items stored in `CreditCardTokenizerTable`. Replace the value of `CreditCardToken` (Step 6.11) and `AccountId` (Step 6.5) with previously identified values.
 
 ```bash
 aws dynamodb get-item --table-name CreditCardTokenizerTable --key '{ "Hash_Key" : { "S": "<CreditCardToken>" }, "Account_Id" : { "S" : "<AccountId>" }  }'
