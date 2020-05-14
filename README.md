@@ -314,12 +314,15 @@ The output will look like
 ```
 Note the *OutputValue* of *OutputKey* `LambdaExecutionRole`, `PaymentMethodApiURL` , `AccountId` , `UserPoolAppClientId` and `Region` from the output for later steps.
 
-**Step 6.6** Update KMS permissions to limit what our lambda is able to do with KMS. This will ensure we are adhering to least privilege principles. You will need the `LambdaExecutionRole` and `AccountId` from step 6.5, the KMS ARN from step 4.5. Replace the key values below and run the following command:
+**Step 6.6** Update KMS permissions to allow Lambda Function to generate data keys for encryption. This will ensure you are adhering to least privilege principles. You will need the `LambdaExecutionRole` and `AccountId` from step 6.5, the KMS ARN from step 4.5. Replace the key values below and run the following command:
 
 ```bash
-KEYID="your kms ARN"
-ROOTPrincipal="arn:aws:iam::{your account number}:root"
-LambdaExecutionRole="your LambdaExecutionRole ARN"
+export KMSArn="<KMSArn>"
+export ROOTPrincipal="arn:aws:iam::<AccountId>:root"
+export LambdaExecutionRole="<LambdaExecutionRole>"
+```
+
+```bash
 POLICY=$(cat << EOF
 { 
     "Version": "2012-10-17", 
@@ -330,20 +333,20 @@ POLICY=$(cat << EOF
             "Effect": "Allow", 
             "Principal": {"AWS": ["$ROOTPrincipal"]}, 
             "Action": "kms:*", 
-            "Resource": "$KEYID" 
+            "Resource": "$KMSArn" 
         }, 
         { 
             "Sid": "Enable IAM User Permissions", 
             "Effect": "Allow", 
             "Principal": {"AWS": ["$LambdaExecutionRole"]}, 
             "Action": ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey", "kms:GenerateDataKeyWithoutPlaintext"], 
-            "Resource": "$KEYID" 
+            "Resource": "$KMSArn" 
         } 
     ] 
 }
 EOF
 ); \
-aws kms put-key-policy --key-id "$KEYID" --policy-name default --policy "$POLICY"
+aws kms put-key-policy --key-id "$KMSArn" --policy-name default --policy "$POLICY"
 ```
 
 
