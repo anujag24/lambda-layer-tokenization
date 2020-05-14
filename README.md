@@ -236,11 +236,10 @@ Let’s build the Serveless application which contains API gateway for API manag
  cd /home/ec2-user/environment/lambda-layer-tokenization/src/CustomerApp/
  ```
  
-**Step 6.2** Build SAM template 
+**Step 6.2** Build SAM template. Replace the parameters with previously noted values for `LayerVersionArn` (Step 5.9)
 
 ```bash
-sam build --use-container 
-```
+sam build --use-container --parameter-overrides layerarn=<LayerVersionArn>
 
 After the build is successful, the output will look like 
 
