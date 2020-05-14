@@ -135,6 +135,7 @@ Resources:
       Handler: app.lambda_handler
       Runtime: python3.7
       Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 256
       VpcConfig:
         SecurityGroupIds:
           - !Ref CustomerOrderSG
@@ -143,14 +144,6 @@ Resources:
       Layers:
         - !Sub '${layerarn}'
       Events:
-        SayHello:
-          Type: Api
-          Properties:
-            Path: /hello
-            RestApiId: !Ref PaymentMethodApi
-            Method: get
-            Auth:
-              Authorizer: NONE
         PaymentMethod:
           Type: Api
           Properties:
