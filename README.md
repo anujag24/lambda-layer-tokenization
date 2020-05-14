@@ -163,7 +163,22 @@ After the build is successful, the output will look like
 
 ![build-success](images/build-success.png)
 
-**Step 5.5** Package the code and push to S3 Bucket. Replace `unique-s3-bucket-name` with the value identified in Step 2
+**Step 5.5** Copy the python files `ddb_encrypt_item.py` and `hash_gen.py` to *dynamodb-client/python/*. This is required since Lambda Layer expects files to be in a specific directory to be used by Lambda function. [More details on this](https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html#configuration-layers-path)
+
+`ddb_encrypt_item.py` – This file contains the logic to encrypt and decrypt the plain text and store encrypted information in DynamoDB table.
+
+`hash_gen.py` - This file contains the logic to create UUID tokens for strings which will be provided to the end application in exchange for sensitive data, for example, credit card. 
+
+```bash
+cp ddb_encrypt_item.py dynamodb-client/python/
+```
+
+```bash
+cp hash_gen.py dynamodb-client/python/
+```
+
+
+**Step 5.6** Package the code and push to S3 Bucket. Replace `unique-s3-bucket-name` with the value identified in Step 2
 
 ```bash
 sam package --s3-bucket <unique-s3-bucket-name> --output-template-file packaged.yaml
@@ -173,7 +188,7 @@ The output will look like
 
 ![package-success](images/tokenizer-stack-package.png)
 
-**Step 5.6** Similar to Step 4.4, create CloudFormation stack using the below code to create resources and deploy your code. Wait for the stack creation to complete. Note the name of the stack is `tokenizer-stack`
+**Step 5.7** Similar to Step 4.4, create CloudFormation stack using the below code to create resources and deploy your code. Wait for the stack creation to complete. Note the name of the stack is `tokenizer-stack`
 
 ```bash
 sam deploy --template-file ./packaged.yaml --stack-name tokenizer-stack
@@ -182,7 +197,7 @@ sam deploy --template-file ./packaged.yaml --stack-name tokenizer-stack
 The output will look like 
 ![tokenizer-stack](images/tokenizer-stack.png)
 
-**Step 5.7** Get the output variables of the stack
+**Step 5.8** Get the output variables of the stack
 
 ```bash
 aws cloudformation describe-stacks --stack-name tokenizer-stack
