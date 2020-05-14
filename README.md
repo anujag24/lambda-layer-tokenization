@@ -98,7 +98,7 @@ The output will look like
 
 **Step 4.4** Packaged.yaml (created in the above step) will be used to deploy the code and resources to AWS. Wait for the stack creation to complete. Note the name of the stack is `kms-stack`
 
-`sam deploy --template-file ./packaged.yaml --stack-name kms-stack`
+`sam deploy --template-file ./packaged.yaml --stack-name kms-stack --capabilities CAPABILITY_IAM`
 
 Once done, the output will look like
 
@@ -191,7 +191,7 @@ The output will look like
 **Step 5.7** Similar to Step 4.4, create CloudFormation stack using the below code to create resources and deploy your code. Wait for the stack creation to complete. Note the name of the stack is `tokenizer-stack`
 
 ```bash
-sam deploy --template-file ./packaged.yaml --stack-name tokenizer-stack
+sam deploy --template-file ./packaged.yaml --stack-name tokenizer-stack --capabilities CAPABILITY_IAM
 ```
 
 The output will look like 
