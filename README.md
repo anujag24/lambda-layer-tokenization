@@ -147,7 +147,7 @@ cryptography
 **Step 5.3** Run the script to compile and install the dependent libraries in *dynamodb-client/python/* directory. For Lambda Function, we can include `--use container` in `sam build` command to achieve this but for Lambda Layer, we need to download the Lambda docker image to compile dependent libraries for Amazon Linux Image. [More details on this](https://github.com/pyca/cryptography/issues/3051?source=post_page-----f3e228470659----------------------)
 
 ```bash
-./get_layer_packages.sh
+./get_AMI_packages_cryptography.sh
 ```
 
 The output will look like 
